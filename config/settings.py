@@ -75,6 +75,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 
+# Media files (uploads)
+MEDIA_URL = '/resumes/'  # URL prefix for uploaded files
+MEDIA_ROOT = BASE_DIR / 'media' / 'resumes'  # actual folder on disk
 
 
 DATABASES = {
@@ -117,6 +120,9 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
+
+
+
 
 
 # Static files (CSS, JavaScript, Images)
