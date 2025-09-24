@@ -1,8 +1,6 @@
-
 from pathlib import Path
 
 from decouple import config
-
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,38 +8,41 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-h%iae)woxjahs(gm8(3h3$d4pu(q^u(u2fg5jpw8yer%b*_9r!"
 
-AUTH_USER_MODEL = 'authentication.Admin'
+AUTH_USER_MODEL = "authentication.Admin"
 
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend.toplineservices.in','13.232.111.125','127.0.0.1','topline-front-end.vercel.app']
-
-
+ALLOWED_HOSTS = [
+    "backend.toplineservices.in",
+    "13.232.111.125",
+    "127.0.0.1",
+    "topline-front-end.vercel.app",
+]
 
 
 INSTALLED_APPS = [
-    'rest_framework',
+    "rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'authentication',
-    'services',
-    'corsheaders'
+    "authentication",
+    "services",
+    "corsheaders",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
 
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -53,7 +54,8 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://topline-front-end.vercel.app",
-    "http://localhost:3000",  # for local dev
+    "http://localhost:3000",
+    "topline-front-end.vercel.app",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -79,18 +81,18 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Media files (uploads)
-MEDIA_URL = '/resumes/'  # URL prefix for uploaded files
-MEDIA_ROOT = BASE_DIR / 'media' / 'resumes'  # actual folder on disk
+MEDIA_URL = "/resumes/"  # URL prefix for uploaded files
+MEDIA_ROOT = BASE_DIR / "media" / "resumes"  # actual folder on disk
 
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':  config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST"),
+        "PORT": config("DB_PORT"),
     }
 }
 
@@ -123,9 +125,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
-
-
 
 
 # Static files (CSS, JavaScript, Images)
