@@ -52,8 +52,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Replace with your Next.js frontend URL
+    "https://topline-front-end.vercel.app",
+    "http://localhost:3000",  # for local dev
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "config.urls"
 
