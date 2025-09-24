@@ -15,7 +15,7 @@ AUTH_USER_MODEL = 'authentication.Admin'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['backend.toplineservices.in','13.232.111.125']
 
 
 
