@@ -15,7 +15,7 @@ AUTH_USER_MODEL = 'authentication.Admin'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend.toplineservices.in','13.232.111.125']
+ALLOWED_HOSTS = ['backend.toplineservices.in','13.232.111.125','127.0.0.1','topline-front-end.vercel.app']
 
 
 
