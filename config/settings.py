@@ -54,8 +54,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://topline-front-end.vercel.app",
-    "http://localhost:3000",
-    "topline-front-end.vercel.app",
+    "http://localhost:3000"
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 
 class ServiceModels(models.Model):
     
@@ -63,6 +64,27 @@ class Gallery(models.Model):
     title = models.CharField(max_length=100)
     service_img = models.ImageField(upload_to='services/images')  # fixed typo
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+
+class Blog(models.Model):
+    title = models.CharField(max_length=255)
+    excerpt = models.TextField()
+    content = models.TextField()
+    thumbnail = models.ImageField(upload_to="thumbnails/")
+    slug = models.SlugField(unique=True, blank=True)
+    published_date = models.DateField()  # <-- add this field
+
+    def save(self, *args, **kwargs):
+        if not self.slug:  
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while Blog.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

@@ -1,7 +1,13 @@
 from rest_framework import serializers
-from .models import ServiceModels ,ContactUs,Career,JobApplication,Video,Gallery
+from .models import ServiceModels ,ContactUs,Career,JobApplication,Video,Gallery,Blog
 
 
+
+class BlogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Blog
+        fields = ['id', 'title', 'excerpt', 'content', 'thumbnail', 'slug','published_date']
+        read_only_fields = ['slug']
 
 class GallerySerializer(serializers.ModelSerializer):
     class Meta:
