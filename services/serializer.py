@@ -6,7 +6,7 @@ from .models import ServiceModels ,ContactUs,Career,JobApplication,Video,Gallery
 class BlogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Blog
-        fields = ['id', 'title', 'excerpt', 'content', 'thumbnail', 'slug','published_date']
+        fields = ['id', 'title', 'excerpt', 'content', 'thumbnail', 'slug','published_date','author']
         read_only_fields = ['slug']
 
 class GallerySerializer(serializers.ModelSerializer):

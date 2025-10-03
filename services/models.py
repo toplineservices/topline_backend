@@ -68,12 +68,13 @@ class Gallery(models.Model):
     
 
 class Blog(models.Model):
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=355)
     excerpt = models.TextField()
     content = models.TextField()
     thumbnail = models.ImageField(upload_to="thumbnails/")
-    slug = models.SlugField(unique=True, blank=True)
-    published_date = models.DateField()  # <-- add this field
+    slug = models.SlugField(unique=True, blank=True,max_length=355)
+    published_date = models.DateField()  # date of publication
+    author = models.CharField(max_length=100, default="Topline Team") 
 
     def save(self, *args, **kwargs):
         if not self.slug:  

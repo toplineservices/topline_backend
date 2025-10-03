@@ -63,7 +63,7 @@ class BlogDetailAPIView(APIView):
     def delete(self, request, pk):
         blog = get_object_or_404(Blog, id=pk)
         blog.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"message":"item deleted"},status=status.HTTP_204_NO_CONTENT)
 class GalleryAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
