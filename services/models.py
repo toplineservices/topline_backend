@@ -62,7 +62,8 @@ class Video(models.Model):
 
 class Gallery(models.Model):
     title = models.CharField(max_length=100)
-    service_img = models.ImageField(upload_to='services/images')  # fixed typo
+    service_img = models.ImageField(upload_to='services/images') 
+    event = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
     

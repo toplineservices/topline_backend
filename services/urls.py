@@ -13,7 +13,8 @@ from .views import (
     GetallPaginated,
     GalleryAPIView,
     GalleryDetailAPIView,
-    GalleryALLImages,
+    GalleryAllImages,
+    EventImagesAPIView,
     BlogListCreateAPIView,
     BlogDetailAPIView,
     PaginatedBlogListAPIView
@@ -40,7 +41,9 @@ urlpatterns = [
     path("videos/<int:pk>", VideoDetailAPIView.as_view(), name="video-detail"),
     path("galleries", GalleryAPIView.as_view(), name="gallery-list-create"),
     path("galleriespage/<int:pk>", GalleryDetailAPIView.as_view(), name="gallery-detail"),
-    path("galleriesallimage", GalleryALLImages.as_view(), name="gallery-list-create"),
+    path("galleriesallimage", GalleryAllImages.as_view(), name="gallery-list-create"),
+    path("eventsallimage", EventImagesAPIView.as_view(), name="gallery-list-create"),
+    
     
     
 ]

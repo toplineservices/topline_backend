@@ -83,12 +83,16 @@ class GalleryAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GalleryALLImages(APIView):
+class GalleryAllImages(APIView):
     def get(self, request):
-        gallery = Gallery.objects.all().order_by("-created_at")
-        serializer = GallerySerializer(gallery, many=True)
+        galleries = Gallery.objects.filter(event=False).order_by("-created_at")
+        serializer = GallerySerializer(galleries, many=True)
         return Response(serializer.data)
-
+class EventImagesAPIView(APIView):
+    def get(self, request):
+        event_images = Gallery.objects.filter(event=True).order_by("-created_at")
+        serializer = GallerySerializer(event_images, many=True)
+        return Response(serializer.data)
 
 class GalleryDetailAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
