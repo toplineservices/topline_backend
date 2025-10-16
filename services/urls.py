@@ -23,7 +23,7 @@ from .views import (
 urlpatterns = [
     path("blogs/", BlogListCreateAPIView.as_view(), name="blog-list-create"),
     path("pageblogs/", PaginatedBlogListAPIView.as_view(), name="blog-list-create"),
-    path("blogs/<int:pk>/", BlogDetailAPIView.as_view(), name="blog-detail"),
+    path("blogs/<int:pk>", BlogDetailAPIView.as_view(), name="blog-detail"),
     path("services", ServiceCreatListAPIView.as_view()),
     path("contact", ContactListCreateAPIView.as_view()),
     path("contact/<int:pk>", ServiceUpdateDropLISTAPIView.as_view()),

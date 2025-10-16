@@ -1,7 +1,10 @@
 from django.shortcuts import render
+from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.utils import timezone
 from rest_framework import status
+from django.conf import settings
 from .models import (
     Blog,
     ServiceModels,
@@ -23,6 +26,11 @@ from .serializer import (
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils import timezone
+import datetime
 
 class PaginatedBlogListAPIView(APIView):
     def get(self, request):
@@ -275,21 +283,73 @@ class ServiceCreatListAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
+
 class ContactListCreateAPIView(APIView):
     def post(self, request):
         serializer = ContactUsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            contact = serializer.save()
+
+            service_name = contact.service.name if contact.service else "General Inquiry"
+            
+            # Check for urgent inquiries
+            urgent_keywords = ['urgent', 'asap', 'emergency', 'immediately', 'critical']
+            is_urgent = any(keyword in contact.message.lower() for keyword in urgent_keywords) or \
+                       any(keyword in service_name.lower() for keyword in urgent_keywords)
+
+            # Define 'now' before using it
+            now = timezone.localtime(timezone.now())
+            
+            context = {
+                'first_name': contact.firstName,
+                'last_name': contact.lastName,
+                'email': contact.email,
+                'phone': contact.phone,
+                'service_name': service_name,
+                'message': contact.message,
+                'timestamp': now.strftime("%B %d, %Y at %I:%M %p"),  # Now 'now' is defined
+                'is_urgent': is_urgent,
+            }
+
+            # Use your branded template
+            html_message = render_to_string('emails/contact_form_modern.html', context)
+            
+            subject = f"New Contact: {contact.firstName} {contact.lastName} - {service_name}"
+            if is_urgent:
+                subject = f"🚨 URGENT: {subject}"
+
+            from_email = settings.EMAIL_HOST_USER
+            recipient_list = ['athulraihan27@gmail.com']
+
+            try:
+                email = EmailMessage(
+                    subject=subject,
+                    body=html_message,
+                    from_email=from_email,
+                    to=recipient_list,
+                )
+                email.content_subtype = "html"
+                email.send(fail_silently=False)
+                
+            except Exception as e:
+                return Response(
+                    {"detail": f"Saved but email sending failed: {str(e)}"},
+                    status=status.HTTP_201_CREATED
+                )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        contacus = ContactUs.objects.all().order_by("-id")
+        contacts = ContactUs.objects.all().order_by("-id")
         paginator = PageNumberPagination()
         paginator.page_size = 10
-        result_page = paginator.paginate_queryset(contacus, request)
+        result_page = paginator.paginate_queryset(contacts, request)
         serializer = ContactUsSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
 
 
 class ServiceUpdateDropLISTAPIView(APIView):

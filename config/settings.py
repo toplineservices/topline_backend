@@ -1,6 +1,11 @@
+import os
+
 from pathlib import Path
 
 from decouple import config
+
+TIME_ZONE = 'Asia/Kolkata'  # IST
+USE_TZ = True
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,6 +14,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-h%iae)woxjahs(gm8(3h3$d4pu(q^u(u2fg5jpw8yer%b*_9r!"
 
 AUTH_USER_MODEL = "authentication.Admin"
+
+
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'       # Gmail SMTP server
+EMAIL_PORT = 587                     # TLS port
+EMAIL_USE_TLS = True                 # Enable TLS
+EMAIL_USE_SSL = False                # Do NOT use SSL with TLS
+EMAIL_HOST_USER = 'athulmk981997@gmail.com'      # From .env
+EMAIL_HOST_PASSWORD ="pylrmzevxldnsdgf"  # From .env (App Password)
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 DEBUG = True
@@ -64,7 +80,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -119,7 +135,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+
 
 USE_I18N = True
 
