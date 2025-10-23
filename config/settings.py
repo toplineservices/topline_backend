@@ -17,14 +17,17 @@ AUTH_USER_MODEL = "authentication.Admin"
 
 
 # settings.py
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'       # Gmail SMTP server
-EMAIL_PORT = 587                     # TLS port
-EMAIL_USE_TLS = True                 # Enable TLS
-EMAIL_USE_SSL = False                # Do NOT use SSL with TLS
-EMAIL_HOST_USER = 'athulmk981997@gmail.com'      # From .env
-EMAIL_HOST_PASSWORD ="pylrmzevxldnsdgf"  # From .env (App Password)
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+CONTACT_RECIPIENTS = config('CONTACT_RECIPIENTS', default='').split(',')
 
 
 DEBUG = True
@@ -128,6 +131,93 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+import os
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "log", "log.log"),
+            "formatter": "verbose",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 100,
+        },
+        "error_file": {
+            "class": "logging.FileHandler",
+            "filename": f"{BASE_DIR}/log/error.log",
+            "formatter": "verbose",
+            "level": "ERROR",
+        },
+        "info_file": {
+            "class": "logging.FileHandler",
+            "filename": f"{BASE_DIR}/log/info.log",
+            "formatter": "verbose",
+            "level": "INFO",
+        },
+     
+ 
+    },
+    "root": {
+        "handlers": ["console", "file", "error_file", "info_file"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file", "error_file", "info_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+       
+  
+    },
+}
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,  # Keep Django’s default loggers
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} {module} {message}',
+#             'style': '{',
+#         },
+#         'simple': {
+#             'format': '{levelname} {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',  # Logs to console
+#             'formatter': 'simple',
+#         },
+#         'file': {
+#             'class': 'logging.FileHandler',   # Logs to file
+#             'filename': os.path.join(BASE_DIR, 'django.log'),
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console', 'file'],
+#             'level': 'INFO',  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+#             'propagate': True,
+#         }
+       
+#     },
+# }
 
 
 # Internationalization

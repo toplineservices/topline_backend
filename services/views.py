@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework import status
 from django.conf import settings
+import logging
+
 from .models import (
     Blog,
     ServiceModels,
@@ -31,7 +33,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
 import datetime
-
+logger = logging.getLogger(__name__)
 class PaginatedBlogListAPIView(APIView):
     def get(self, request):
         applications = Blog.objects.all().order_by("-published_date")
@@ -296,9 +298,8 @@ class ContactListCreateAPIView(APIView):
             # Check for urgent inquiries
             urgent_keywords = ['urgent', 'asap', 'emergency', 'immediately', 'critical']
             is_urgent = any(keyword in contact.message.lower() for keyword in urgent_keywords) or \
-                       any(keyword in service_name.lower() for keyword in urgent_keywords)
+                        any(keyword in service_name.lower() for keyword in urgent_keywords)
 
-            # Define 'now' before using it
             now = timezone.localtime(timezone.now())
             
             context = {
@@ -308,11 +309,10 @@ class ContactListCreateAPIView(APIView):
                 'phone': contact.phone,
                 'service_name': service_name,
                 'message': contact.message,
-                'timestamp': now.strftime("%B %d, %Y at %I:%M %p"),  # Now 'now' is defined
+                'timestamp': now.strftime("%B %d, %Y at %I:%M %p"),
                 'is_urgent': is_urgent,
             }
 
-            # Use your branded template
             html_message = render_to_string('emails/contact_form_modern.html', context)
             
             subject = f"New Contact: {contact.firstName} {contact.lastName} - {service_name}"
@@ -320,9 +320,11 @@ class ContactListCreateAPIView(APIView):
                 subject = f"🚨 URGENT: {subject}"
 
             from_email = settings.EMAIL_HOST_USER
-            recipient_list = ['athulraihan27@gmail.com']
+            recipient_list = [email.strip() for email in settings.CONTACT_RECIPIENTS if email.strip()]
+            logger.info(f"Contact form submitted  to {recipient_list}.")
 
             try:
+                print('2')
                 email = EmailMessage(
                     subject=subject,
                     body=html_message,
@@ -331,8 +333,16 @@ class ContactListCreateAPIView(APIView):
                 )
                 email.content_subtype = "html"
                 email.send(fail_silently=False)
+
+                # ✅ Log successful submission
+                print('4')
+                logger.info(f"Contact form submitted by {contact.email} for service '{service_name}'.")
+                if is_urgent:
+                    logger.warning(f"⚠️ Urgent inquiry received from {contact.email}.")
                 
             except Exception as e:
+                # ✅ Log error during email sending
+                logger.error(f"Failed to send email for contact {contact.email}: {e}", exc_info=True)
                 return Response(
                     {"detail": f"Saved but email sending failed: {str(e)}"},
                     status=status.HTTP_201_CREATED
@@ -340,6 +350,8 @@ class ContactListCreateAPIView(APIView):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        # ✅ Log invalid form submissions
+        logger.warning(f"Invalid contact form submission: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
