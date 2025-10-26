@@ -15,6 +15,8 @@ from .models import (
     JobApplication,
     Video,
     Gallery,
+    SiteVisit
+    
 )
 from .serializer import (
     BlogSerializer,
@@ -24,7 +26,10 @@ from .serializer import (
     JobApplicationSerializer,
     VideoSerializer,
     GallerySerializer,
+    SiteVisitSerializer
 )
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -32,8 +37,78 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
-import datetime
+import calendar
+from datetime import date
 logger = logging.getLogger(__name__)
+
+
+class TotalVisitsAndContactsAPIView(APIView):
+    """
+    Returns total counts for SiteVisit and ContactUs
+    """
+    def get(self, request):
+        total_visits = SiteVisit.objects.count()
+        total_contacts = ContactUs.objects.count()
+        total_jobs = Career.objects.count()
+
+        return Response({
+            "total_visits": total_visits,
+            "total_contacts": total_contacts,
+            "total_jobs": total_jobs
+        })
+class TrackVisitView(APIView):
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    def post(self, request):
+        ip = self.get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        SiteVisit.objects.create(ip_address=ip, user_agent=user_agent)
+        return Response({"message": "Visit recorded successfully"})
+
+    def get(self, request):
+        visits = SiteVisit.objects.all().order_by('-visited_at')
+        serializer = SiteVisitSerializer(visits, many=True)
+        return Response(serializer.data)
+class VisitCountView(APIView):
+    def get(self, request):
+        today = date.today()
+        current_year = today.year
+        current_month = today.month
+
+        # Aggregate visits by month
+        visits = (
+            SiteVisit.objects
+            .filter(visited_at__year=current_year)
+            .annotate(month=TruncMonth('visited_at'))
+            .values('month')
+            .annotate(visits=Count('id'))
+            .order_by('month')
+        )
+
+        # Initialize past months with 0
+        month_data = {}
+        for i in range(1, current_month + 1):  # only past and current months
+            month_abbr = calendar.month_abbr[i]
+            month_data[month_abbr] = 0
+
+        # Fill in actual data
+        for v in visits:
+            month_str = v['month'].strftime('%b')
+            if month_str in month_data:
+                month_data[month_str] = v['visits']
+
+        # Convert to list of dicts
+        data = [{'month': month, 'visits': month_data[month]} for month in month_data]
+
+        return Response(data)
+
+
 class PaginatedBlogListAPIView(APIView):
     def get(self, request):
         applications = Blog.objects.all().order_by("-published_date")
@@ -284,7 +359,38 @@ class ServiceCreatListAPIView(APIView):
         serializer = ServiceSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class MonthlyContactsReportAPIView(APIView):
+    """
+    Returns monthly contact submissions report
+    """
+    def get(self, request):
+        today = date.today()
+        current_year = today.year
+        current_month = today.month
 
+        # Aggregate contacts by month for current year
+        contacts = (
+            ContactUs.objects
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(contacts=Count('id'))
+            .order_by('month')
+        )
+
+        # Initialize months with 0
+        month_data = {calendar.month_abbr[i]: 0 for i in range(1, current_month + 1)}
+
+        # Fill in actual data
+        for c in contacts:
+            month_str = c['month'].strftime('%b')
+            if month_str in month_data:
+                month_data[month_str] = c['contacts']
+
+        # Convert to list of dicts
+        data = [{'month': month, 'contacts': month_data[month]} for month in month_data]
+
+        return Response(data)
 
 
 class ContactListCreateAPIView(APIView):
@@ -320,11 +426,14 @@ class ContactListCreateAPIView(APIView):
                 subject = f"🚨 URGENT: {subject}"
 
             from_email = settings.EMAIL_HOST_USER
-            recipient_list = [email.strip() for email in settings.CONTACT_RECIPIENTS if email.strip()]
+            # recipient_list = [email.strip() for email in settings.CONTACT_RECIPIENTS if email.strip()]
+            recipient_list = ['athulraihan27@gmail.com']
+
+            
             logger.info(f"Contact form submitted  to {recipient_list}.")
 
             try:
-                print('2')
+
                 email = EmailMessage(
                     subject=subject,
                     body=html_message,
@@ -335,7 +444,7 @@ class ContactListCreateAPIView(APIView):
                 email.send(fail_silently=False)
 
                 # ✅ Log successful submission
-                print('4')
+      
                 logger.info(f"Contact form submitted by {contact.email} for service '{service_name}'.")
                 if is_urgent:
                     logger.warning(f"⚠️ Urgent inquiry received from {contact.email}.")

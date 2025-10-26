@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ServiceModels ,ContactUs,Career,JobApplication,Video,Gallery,Blog
+from .models import ServiceModels ,ContactUs,Career,JobApplication,Video,Gallery,Blog,SiteVisit
 
 
 
@@ -28,7 +28,7 @@ class ContactUsSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name',read_only=True)
     class Meta:
         model = ContactUs
-        fields = ['id','firstName','lastName','email','phone','service','service_name','message']
+        fields = ['id','firstName','lastName','email','phone','service','service_name','message','created_at']
 
 
 class CareerSerializer(serializers.ModelSerializer):
@@ -45,7 +45,8 @@ class CareerSerializer(serializers.ModelSerializer):
             'type_display',
             'salary',
             'description',
-            'requirements'
+            'requirements',
+            'created_at'
         ]
         
 class JobApplicationSerializer(serializers.ModelSerializer):
@@ -70,3 +71,9 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             if obj.resume:
                 return request.build_absolute_uri(obj.resume.url)  # full URL
             return None
+
+
+class SiteVisitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteVisit
+        fields = ['id', 'ip_address', 'user_agent', 'visited_at']

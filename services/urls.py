@@ -18,9 +18,17 @@ from .views import (
     BlogListCreateAPIView,
     BlogDetailAPIView,
     PaginatedBlogListAPIView,
+    TrackVisitView,
+    VisitCountView,
+    MonthlyContactsReportAPIView,
+    TotalVisitsAndContactsAPIView
 )
 
 urlpatterns = [
+    path("totals", TotalVisitsAndContactsAPIView.as_view(), name="totals"),
+    path("contacts/monthly-report", MonthlyContactsReportAPIView.as_view(), name="monthly-contacts-report"),
+    path("visit-count", VisitCountView.as_view(), name="visit-count"),
+    path("track-visit/", TrackVisitView.as_view(), name="track-visit"),
     path("blogs/", BlogListCreateAPIView.as_view(), name="blog-list-create"),
     path("pageblogs/", PaginatedBlogListAPIView.as_view(), name="blog-list-create"),
     path("blogs/<int:pk>", BlogDetailAPIView.as_view(), name="blog-detail"),
