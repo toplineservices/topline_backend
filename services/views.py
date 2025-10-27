@@ -427,7 +427,7 @@ class ContactListCreateAPIView(APIView):
 
             from_email = settings.EMAIL_HOST_USER
             # recipient_list = [email.strip() for email in settings.CONTACT_RECIPIENTS if email.strip()]
-            recipient_list = ['athulraihan27@gmail.com']
+            recipient_list = ['sudhir.kg@toplineservices.in','gkmathew@toplineservices.in','ps@toplineservices.in','Info@toplineservices.in']
 
             
             logger.info(f"Contact form submitted  to {recipient_list}.")
