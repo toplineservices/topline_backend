@@ -30,7 +30,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 CONTACT_RECIPIENTS = config('CONTACT_RECIPIENTS', default='').split(',')
 
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "backend.toplineservices.in",
