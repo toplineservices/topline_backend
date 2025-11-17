@@ -9,6 +9,7 @@ class AdminManager(BaseUserManager):
         admin = self.model(email=email, name=name, designation=designation)
         admin.set_password(password)
         admin.save(using=self._db)
+        
         return admin
 
     def create_superuser(self, email, name, designation, password):
@@ -19,6 +20,7 @@ class Admin(AbstractBaseUser):
     email = models.EmailField(unique=True)
     designation = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
+    profile_image = models.ImageField(upload_to='admin_profile/', blank=True, null=True)
 
     objects = AdminManager()
 
