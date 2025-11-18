@@ -30,7 +30,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 CONTACT_RECIPIENTS = config('CONTACT_RECIPIENTS', default='').split(',')
 
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "backend.toplineservices.in",
@@ -99,7 +99,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Media files (uploads)
-MEDIA_URL = "/resumes/"  # URL prefix for uploaded files
+MEDIA_URL = "/resumes/"  # URL prefix for uploaded files    
 MEDIA_ROOT = BASE_DIR / "media" / "resumes"  # actual folder on disk
 
 
