@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework import status
 from django.conf import settings
 import logging
-
+from django.db.models import Q
 from .models import (
     Blog,
     ServiceModels,
@@ -40,7 +40,7 @@ from django.utils import timezone
 import calendar
 from datetime import date
 logger = logging.getLogger(__name__)
-
+from datetime import datetime
 
 class TotalVisitsAndContactsAPIView(APIView):
     """
@@ -120,7 +120,30 @@ class PaginatedBlogListAPIView(APIView):
     
 class BlogListCreateAPIView(APIView):
     def get(self, request):
-        blogs = Blog.objects.all().order_by("-published_date")
+
+        search = request.query_params.get('search', None)
+        published_date = request.query_params.get('published_date', None)
+        blogs = Blog.objects.all()
+    
+        if search:
+            blogs = blogs.filter(
+                Q(title__icontains=search) |
+                Q(excerpt__icontains=search) |
+                Q(content__icontains=search) |
+                Q(author__icontains=search)
+            )
+    
+
+        if published_date:
+            try:
+                filter_date = datetime.strptime(published_date, '%Y-%m-%d').date()
+                blogs = blogs.filter(published_date=filter_date)
+            except ValueError:
+                pass
+    
+    
+        blogs = blogs.order_by("-published_date")
+    
         serializer = BlogSerializer(blogs, many=True, context={"request": request})
         return Response(serializer.data)
 
@@ -258,11 +281,26 @@ class JobApplicationAPIView(APIView):
             .select_related("career")
             .order_by("-applied_at")
         )
+        job = request.GET.get("job")
+        name = request.GET.get("name")
+        date = request.GET.get("date")
+
+        if job:
+            applications = applications.filter(career__title__icontains=job)
+
+        if name:
+            applications = applications.filter(first_name__icontains=name)
+
+        if date:
+            applications = applications.filter(applied_at__date=date)
+
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = int(request.GET.get("pageSize", 10))
         result_page = paginator.paginate_queryset(applications, request)
+
         serializer = JobApplicationSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
 
     def post(self, request):
         serializer = JobApplicationSerializer(data=request.data)
@@ -442,15 +480,12 @@ class ContactListCreateAPIView(APIView):
                 )
                 email.content_subtype = "html"
                 email.send(fail_silently=False)
-
-                # ✅ Log successful submission
       
                 logger.info(f"Contact form submitted by {contact.email} for service '{service_name}'.")
                 if is_urgent:
                     logger.warning(f"⚠️ Urgent inquiry received from {contact.email}.")
                 
             except Exception as e:
-                # ✅ Log error during email sending
                 logger.error(f"Failed to send email for contact {contact.email}: {e}", exc_info=True)
                 return Response(
                     {"detail": f"Saved but email sending failed: {str(e)}"},
@@ -459,17 +494,32 @@ class ContactListCreateAPIView(APIView):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # ✅ Log invalid form submissions
         logger.warning(f"Invalid contact form submission: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
         contacts = ContactUs.objects.all().order_by("-id")
+
+        name = request.GET.get("name")
+        email = request.GET.get("email")
+        date = request.GET.get("date")
+
+        if name:
+            contacts = contacts.filter(firstName__icontains=name)
+
+        if email:
+            contacts = contacts.filter(email__icontains=email)
+
+        if date:
+            contacts = contacts.filter(created_at__date=date)
+
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = int(request.GET.get("pageSize", 10))
         result_page = paginator.paginate_queryset(contacts, request)
+    
         serializer = ContactUsSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
 
 
 
