@@ -15,8 +15,7 @@ from .models import (
     JobApplication,
     Video,
     Gallery,
-    SiteVisit
-    
+    SiteVisit,
 )
 from .serializer import (
     BlogSerializer,
@@ -26,7 +25,7 @@ from .serializer import (
     JobApplicationSerializer,
     VideoSerializer,
     GallerySerializer,
-    SiteVisitSerializer
+    SiteVisitSerializer,
 )
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -39,74 +38,84 @@ from django.utils.html import strip_tags
 from django.utils import timezone
 import calendar
 from datetime import date
-logger = logging.getLogger(__name__)
 from datetime import datetime
+from django.db.models.functions import ExtractYear
+
+logger = logging.getLogger(__name__)
+
 
 class TotalVisitsAndContactsAPIView(APIView):
     """
     Returns total counts for SiteVisit and ContactUs
     """
+
     def get(self, request):
         total_visits = SiteVisit.objects.count()
         total_contacts = ContactUs.objects.count()
         total_jobs = Career.objects.count()
 
-        return Response({
-            "total_visits": total_visits,
-            "total_contacts": total_contacts,
-            "total_jobs": total_jobs
-        })
+        return Response(
+            {
+                "total_visits": total_visits,
+                "total_contacts": total_contacts,
+                "total_jobs": total_jobs,
+            }
+        )
+
+
 class TrackVisitView(APIView):
     def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+            ip = x_forwarded_for.split(",")[0]
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = request.META.get("REMOTE_ADDR")
         return ip
 
     def post(self, request):
         ip = self.get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
         SiteVisit.objects.create(ip_address=ip, user_agent=user_agent)
         return Response({"message": "Visit recorded successfully"})
 
     def get(self, request):
-        visits = SiteVisit.objects.all().order_by('-visited_at')
+        visits = SiteVisit.objects.all().order_by("-visited_at")
         serializer = SiteVisitSerializer(visits, many=True)
         return Response(serializer.data)
+
+
 class VisitCountView(APIView):
     def get(self, request):
-        today = date.today()
-        current_year = today.year
-        current_month = today.month
-
-        # Aggregate visits by month
         visits = (
-            SiteVisit.objects
-            .filter(visited_at__year=current_year)
-            .annotate(month=TruncMonth('visited_at'))
-            .values('month')
-            .annotate(visits=Count('id'))
-            .order_by('month')
+            SiteVisit.objects.annotate(
+                year=ExtractYear("visited_at"), month=TruncMonth("visited_at")
+            )
+            .values("year", "month")
+            .annotate(visits=Count("id"))
+            .order_by("year", "month")
         )
 
-        # Initialize past months with 0
-        month_data = {}
-        for i in range(1, current_month + 1):  # only past and current months
-            month_abbr = calendar.month_abbr[i]
-            month_data[month_abbr] = 0
+        result = {}
 
-        # Fill in actual data
         for v in visits:
-            month_str = v['month'].strftime('%b')
-            if month_str in month_data:
-                month_data[month_str] = v['visits']
+            year = v["year"]
+            month_name = v["month"].strftime("%b")
 
-        # Convert to list of dicts
-        data = [{'month': month, 'visits': month_data[month]} for month in month_data]
+            if year not in result:
+                # initialize all 12 months for the year
+                result[year] = {calendar.month_abbr[i]: 0 for i in range(1, 13)}
 
-        return Response(data)
+            result[year][month_name] = v["visits"]
+
+        response = [
+            {
+                "year": year,
+                "months": [{"month": m, "visits": c} for m, c in months.items()],
+            }
+            for year, months in result.items()
+        ]
+
+        return Response(response)
 
 
 class PaginatedBlogListAPIView(APIView):
@@ -117,33 +126,31 @@ class PaginatedBlogListAPIView(APIView):
         result_page = paginator.paginate_queryset(applications, request)
         serializer = BlogSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-    
+
+
 class BlogListCreateAPIView(APIView):
     def get(self, request):
-
-        search = request.query_params.get('search', None)
-        published_date = request.query_params.get('published_date', None)
+        search = request.query_params.get("search", None)
+        published_date = request.query_params.get("published_date", None)
         blogs = Blog.objects.all()
-    
+
         if search:
             blogs = blogs.filter(
-                Q(title__icontains=search) |
-                Q(excerpt__icontains=search) |
-                Q(content__icontains=search) |
-                Q(author__icontains=search)
+                Q(title__icontains=search)
+                | Q(excerpt__icontains=search)
+                | Q(content__icontains=search)
+                | Q(author__icontains=search)
             )
-    
 
         if published_date:
             try:
-                filter_date = datetime.strptime(published_date, '%Y-%m-%d').date()
+                filter_date = datetime.strptime(published_date, "%Y-%m-%d").date()
                 blogs = blogs.filter(published_date=filter_date)
             except ValueError:
                 pass
-    
-    
+
         blogs = blogs.order_by("-published_date")
-    
+
         serializer = BlogSerializer(blogs, many=True, context={"request": request})
         return Response(serializer.data)
 
@@ -154,15 +161,18 @@ class BlogListCreateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class BlogDetailAPIView(APIView):
     def get(self, request, pk):
         blog = get_object_or_404(Blog, id=pk)
-        serializer = BlogSerializer(blog, context={'request': request})
+        serializer = BlogSerializer(blog, context={"request": request})
         return Response(serializer.data)
 
     def put(self, request, pk):
         blog = get_object_or_404(Blog, id=pk)
-        serializer = BlogSerializer(blog, data=request.data, partial=True)  # partial=True allows updating some fields
+        serializer = BlogSerializer(
+            blog, data=request.data, partial=True
+        )  # partial=True allows updating some fields
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -171,7 +181,9 @@ class BlogDetailAPIView(APIView):
     def delete(self, request, pk):
         blog = get_object_or_404(Blog, id=pk)
         blog.delete()
-        return Response({"message":"item deleted"},status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "item deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
 class GalleryAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -196,11 +208,14 @@ class GalleryAllImages(APIView):
         galleries = Gallery.objects.filter(event=False).order_by("-created_at")
         serializer = GallerySerializer(galleries, many=True)
         return Response(serializer.data)
+
+
 class EventImagesAPIView(APIView):
     def get(self, request):
         event_images = Gallery.objects.filter(event=True).order_by("-created_at")
         serializer = GallerySerializer(event_images, many=True)
         return Response(serializer.data)
+
 
 class GalleryDetailAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -301,7 +316,6 @@ class JobApplicationAPIView(APIView):
         serializer = JobApplicationSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-
     def post(self, request):
         serializer = JobApplicationSerializer(data=request.data)
         if serializer.is_valid():
@@ -397,38 +411,45 @@ class ServiceCreatListAPIView(APIView):
         serializer = ServiceSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class MonthlyContactsReportAPIView(APIView):
     """
     Returns monthly contact submissions report
     """
-    def get(self, request):
-        today = date.today()
-        current_year = today.year
-        current_month = today.month
 
-        # Aggregate contacts by month for current year
+    def get(self, request):
         contacts = (
-            ContactUs.objects
-            .filter(created_at__year=current_year)
-            .annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(contacts=Count('id'))
-            .order_by('month')
+            ContactUs.objects.annotate(
+                year=ExtractYear("created_at"), month=TruncMonth("created_at")
+            )
+            .values("year", "month")
+            .annotate(contacts=Count("id"))
+            .order_by("year", "month")
         )
 
-        # Initialize months with 0
-        month_data = {calendar.month_abbr[i]: 0 for i in range(1, current_month + 1)}
+        result = {}
 
-        # Fill in actual data
         for c in contacts:
-            month_str = c['month'].strftime('%b')
-            if month_str in month_data:
-                month_data[month_str] = c['contacts']
+            year = c["year"]
+            month_name = c["month"].strftime("%b")
 
-        # Convert to list of dicts
-        data = [{'month': month, 'contacts': month_data[month]} for month in month_data]
+            if year not in result:
+                # initialize all 12 months for the year
+                result[year] = {calendar.month_abbr[i]: 0 for i in range(1, 13)}
 
-        return Response(data)
+            result[year][month_name] = c["contacts"]
+
+        response = [
+            {
+                "year": year,
+                "months": [
+                    {"month": m, "contacts": count} for m, count in months.items()
+                ],
+            }
+            for year, months in result.items()
+        ]
+
+        return Response(response)
 
 
 class ContactListCreateAPIView(APIView):
@@ -437,41 +458,49 @@ class ContactListCreateAPIView(APIView):
         if serializer.is_valid():
             contact = serializer.save()
 
-            service_name = contact.service.name if contact.service else "General Inquiry"
-            
+            service_name = (
+                contact.service.name if contact.service else "General Inquiry"
+            )
+
             # Check for urgent inquiries
-            urgent_keywords = ['urgent', 'asap', 'emergency', 'immediately', 'critical']
-            is_urgent = any(keyword in contact.message.lower() for keyword in urgent_keywords) or \
-                        any(keyword in service_name.lower() for keyword in urgent_keywords)
+            urgent_keywords = ["urgent", "asap", "emergency", "immediately", "critical"]
+            is_urgent = any(
+                keyword in contact.message.lower() for keyword in urgent_keywords
+            ) or any(keyword in service_name.lower() for keyword in urgent_keywords)
 
             now = timezone.localtime(timezone.now())
-            
+
             context = {
-                'first_name': contact.firstName,
-                'last_name': contact.lastName,
-                'email': contact.email,
-                'phone': contact.phone,
-                'service_name': service_name,
-                'message': contact.message,
-                'timestamp': now.strftime("%B %d, %Y at %I:%M %p"),
-                'is_urgent': is_urgent,
+                "first_name": contact.firstName,
+                "last_name": contact.lastName,
+                "email": contact.email,
+                "phone": contact.phone,
+                "service_name": service_name,
+                "message": contact.message,
+                "timestamp": now.strftime("%B %d, %Y at %I:%M %p"),
+                "is_urgent": is_urgent,
             }
 
-            html_message = render_to_string('emails/contact_form_modern.html', context)
-            
-            subject = f"New Contact: {contact.firstName} {contact.lastName} - {service_name}"
+            html_message = render_to_string("emails/contact_form_modern.html", context)
+
+            subject = (
+                f"New Contact: {contact.firstName} {contact.lastName} - {service_name}"
+            )
             if is_urgent:
                 subject = f"🚨 URGENT: {subject}"
 
             from_email = settings.EMAIL_HOST_USER
             # recipient_list = [email.strip() for email in settings.CONTACT_RECIPIENTS if email.strip()]
-            recipient_list = ['sudhir.kg@toplineservices.in','gkmathew@toplineservices.in','ps@toplineservices.in','Info@toplineservices.in']
+            recipient_list = [
+                "sudhir.kg@toplineservices.in",
+                "gkmathew@toplineservices.in",
+                "ps@toplineservices.in",
+                "Info@toplineservices.in",
+            ]
 
-            
             logger.info(f"Contact form submitted  to {recipient_list}.")
 
             try:
-
                 email = EmailMessage(
                     subject=subject,
                     body=html_message,
@@ -480,16 +509,21 @@ class ContactListCreateAPIView(APIView):
                 )
                 email.content_subtype = "html"
                 email.send(fail_silently=False)
-      
-                logger.info(f"Contact form submitted by {contact.email} for service '{service_name}'.")
+
+                logger.info(
+                    f"Contact form submitted by {contact.email} for service '{service_name}'."
+                )
                 if is_urgent:
                     logger.warning(f"⚠️ Urgent inquiry received from {contact.email}.")
-                
+
             except Exception as e:
-                logger.error(f"Failed to send email for contact {contact.email}: {e}", exc_info=True)
+                logger.error(
+                    f"Failed to send email for contact {contact.email}: {e}",
+                    exc_info=True,
+                )
                 return Response(
                     {"detail": f"Saved but email sending failed: {str(e)}"},
-                    status=status.HTTP_201_CREATED
+                    status=status.HTTP_201_CREATED,
                 )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -516,11 +550,9 @@ class ContactListCreateAPIView(APIView):
         paginator = PageNumberPagination()
         paginator.page_size = int(request.GET.get("pageSize", 10))
         result_page = paginator.paginate_queryset(contacts, request)
-    
+
         serializer = ContactUsSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-
-
 
 
 class ServiceUpdateDropLISTAPIView(APIView):
